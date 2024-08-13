@@ -1,0 +1,74 @@
+﻿@page "/movablediv"
+
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+@inject SignalRConnection SignalRConnection
+@implements IAsyncDisposable
+
+<div @ref="divRef" class="movable-div text-secondary" style="position: absolute; top:@posYpx; left:@posXpx;
+    width: 100px;
+    height: 100px;
+    background-color: blue;
+    color: white;
+    text-align: center;
+    line-height: 100px;
+    cursor: move;
+    border-radius: 5px;"
+     @onmousedown="OnMouseDown"
+     @onmouseup="OnMouseUp"
+     @onmousemove="OnMouseMove">
+    Drag Me
+</div>
+
+@code {
+    private ElementReference divRef;
+    private bool isDragging;
+    private int posX, posY;
+    private string posXpx => $"{posX}px";
+    private string posYpx => $"{posY}px";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await SignalRConnection.StartConnection();
+
+        SignalRConnection.hubConnection.On<int, int>("ReceiveDivPosition", (x, y) =>
+        {
+            posX = x;
+            posY = y;
+            StateHasChanged();
+        });
+    }
+
+    private void OnMouseDown(MouseEventArgs e)
+    {
+        isDragging = true;
+    }
+
+    private async Task OnMouseUp(MouseEventArgs e)
+    {
+        isDragging = false;
+    }
+
+    private async Task OnMouseMove(MouseEventArgs e)
+    {
+        if (isDragging)
+        {
+            posX += (int)e.MovementX;
+            posY += (int)e.MovementY;
+
+            // Send the updated position to the server
+            await SignalRConnection.hubConnection.SendAsync("UpdateDivPosition", posX, posY);
+        }
+    }
+
+    public bool IsConnected =>
+        SignalRConnection.hubConnection?.State == HubConnectionState.Connected;
+
+    public async ValueTask DisposeAsync()
+    {
+        if (SignalRConnection.hubConnection is not null)
+        {
+            await SignalRConnection.CloseConnection();
+        }
+    }
+}

@@ -1,0 +1,92 @@
+﻿@page "/"
+
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+@inject SignalRConnection SignalRConnection
+@implements IAsyncDisposable
+<PageTitle>Admin Dashboard</PageTitle>
+
+<RadzenDataGrid Data="@OnlineUsers" AllowVirtualization="true" Style="height:400px"
+                AllowFiltering="true" FilterPopupRenderMode="PopupRenderMode.OnDemand" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" LogicalFilterOperator="LogicalFilterOperator.Or"
+                AllowSorting="true">
+    <Columns>
+        <RadzenDataGridColumn Title="Photo" Frozen="true" Sortable="false" Filterable="false" Width="80px" TextAlign="TextAlign.Center">
+            <Template Context="data">
+                <RadzenImage Path="/images.png" class="rz-gravatar" AlternateText="" />
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn Property="@nameof(OnlineUser.UserName)" Title="UserName" />
+        <RadzenDataGridColumn Property="@nameof(OnlineUser.StartConnection)" Title="StartConnection" />
+        <RadzenDataGridColumn Title="Status">
+            <Template Context="user">
+                @if (user.Status == "Online")
+                {
+                    <span class="badge bg-success">Online</span>
+                }
+                else
+                {
+                    <span class="badge bg-danger ">Offline</span>
+                }
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn Title="Actions">
+            <Template Context="user">
+                <button class="btn btn-success" @onclick="() => SendHi(user.UserName)">Hi</button>
+            </Template>
+        </RadzenDataGridColumn>
+    </Columns>
+</RadzenDataGrid>
+
+@code {
+    List<OnlineUser> OnlineUsers = new List<OnlineUser>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await SignalRConnection.StartConnection();
+
+        SignalRConnection.hubConnection.On<string, DateTime>("UserConnected", (username, startConnection) =>
+        {
+            var user = OnlineUsers.FirstOrDefault(u => u.UserName == username);
+            if (user == null)
+            {
+                OnlineUsers.Add(new OnlineUser { UserName = username, Status = "Online", StartConnection = startConnection });
+            }
+            else
+            {
+                user.Status = "Online";
+                user.StartConnection = startConnection;
+            }
+            InvokeAsync(StateHasChanged);
+        });
+
+        SignalRConnection.hubConnection.On<string, DateTime>("UserDisConnected", (username, endConnection) =>
+        {
+            var user = OnlineUsers.FirstOrDefault(u => u.UserName == username);
+            if (user != null)
+            {
+                user.Status = "Offline";
+                user.StartConnection = endConnection;
+            }
+            InvokeAsync(StateHasChanged);
+        });
+    }
+
+    private async Task SendHi(string username)
+    {
+        if (SignalRConnection.hubConnection is not null)
+        {
+            await SignalRConnection.hubConnection.SendAsync("SendMessageToUser", username, "Hi");
+        }
+    }
+
+    public bool IsConnected =>
+        SignalRConnection.hubConnection?.State == HubConnectionState.Connected;
+
+    public async ValueTask DisposeAsync()
+    {
+        if (SignalRConnection.hubConnection is not null)
+        {
+            await SignalRConnection.CloseConnection();
+        }
+    }
+}

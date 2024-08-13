@@ -1,0 +1,83 @@
+﻿@using BlazorWebAssemblyApp.SignalRConnections
+@using Microsoft.AspNetCore.SignalR.Client
+
+@inject SignalRConnection signalRConnection
+
+@implements IAsyncDisposable
+
+
+
+<Toasts class="p-3" Messages="messages" AutoHide="true" StackLength="3" Placement="ToastsPlacement.TopRight" />
+
+@code {
+    
+
+  
+    List<ToastMessage> messages = new List<ToastMessage>();
+
+
+    protected async override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                await signalRConnection.StartConnection();
+
+                signalRConnection.hubConnection.On<string>("ReceiveMessage", (statement) =>
+                {
+                    
+                    {
+                        ShowMessage(ToastType.Success, statement );
+                    }
+
+                    InvokeAsync(StateHasChanged);
+                });
+
+                signalRConnection.hubConnection.On<string>("AllClientsNotification", (statement) =>
+                {
+
+                    {
+                        ShowMessage(ToastType.Success, statement);
+                    }
+
+                    InvokeAsync(StateHasChanged);
+                });
+            }
+            catch (Exception ex)
+            {
+                // Handle exception (e.g., log the error)
+            }
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    private void ShowMessage() => ShowMessage(ToastType.Success, "test");
+
+    private void ShowMessage(ToastType toastType, string statement)
+        => messages.Add(CreateToastMessage(toastType, statement));
+
+    private ToastMessage CreateToastMessage(ToastType toastType, string statement)
+        => new ToastMessage
+            {
+                Type = toastType,
+                Title = "Server",
+                HelpText = $"{DateTime.Now}",
+                Message = statement,
+            };
+
+    public bool IsConnected =>
+     signalRConnection.hubConnection?.State == HubConnectionState.Connected;
+
+    public async ValueTask DisposeAsync()
+    {
+        if (signalRConnection.hubConnection is not null)
+        {
+            await signalRConnection.CloseConnection();
+        }
+    }
+
+
+
+}

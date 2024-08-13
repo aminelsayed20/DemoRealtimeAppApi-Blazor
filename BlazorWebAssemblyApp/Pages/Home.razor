@@ -1,0 +1,48 @@
+﻿@page "/"
+@inject AuthenticationStateProvider authStateProvider
+@inject UserState UserState 
+<PageTitle>Home</PageTitle>
+@attribute [Authorize]
+
+
+<AuthorizeView>
+
+    Hello @context.User.Identity?.Name!
+
+    <br />
+    <br />
+    <br />
+    <Card Style="width:18rem;">
+        <CardHeader>
+            System Permission
+        </CardHeader>
+        <CardBody>
+            <CardTitle>Do you wanna allow to server to send a notifications</CardTitle>
+            <CardText></CardText>
+            <Button Color="ButtonColor.Success" To="#" Type="ButtonType.Link">Okay</Button>
+        </CardBody>
+    </Card>
+    <Notification  />
+
+</AuthorizeView>
+
+@code {
+    private string username = "Loading...";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var customAuthStateProvider = (CustomAuthenticationStateProvider)authStateProvider;
+        var authState = await customAuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated ?? false)
+        {
+            username = user.Identity.Name ?? "Unknown User";
+            UserState.SetUsername(username);
+        }
+        else
+        {
+            username = "Guest"; // Default value if not authenticated
+        }
+    }
+}

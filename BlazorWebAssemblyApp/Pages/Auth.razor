@@ -1,0 +1,23 @@
+﻿@page "/auth"
+
+@using Microsoft.AspNetCore.Authorization
+@* @inject UserState UserState *@
+
+@attribute [Authorize]
+
+
+
+<PageTitle>Auth</PageTitle>
+
+<h1>You are authenticated  </h1>
+
+<AuthorizeView>
+
+    Hello   @context.User.Identity?.Name!
+    <Notification />
+
+</AuthorizeView>
+
+@code {
+    
+}
