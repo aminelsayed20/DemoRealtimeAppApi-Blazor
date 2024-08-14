@@ -5,26 +5,16 @@
 @attribute [Authorize]
 
 
+
 <AuthorizeView>
 
     Hello @context.User.Identity?.Name!
 
-    <br />
-    <br />
-    <br />
-    <Card Style="width:18rem;">
-        <CardHeader>
-            System Permission
-        </CardHeader>
-        <CardBody>
-            <CardTitle>Do you wanna allow to server to send a notifications</CardTitle>
-            <CardText></CardText>
-            <Button Color="ButtonColor.Success" To="#" Type="ButtonType.Link">Okay</Button>
-        </CardBody>
-    </Card>
-    <Notification  />
+<AllowNotification  />
+<Notification  />
 
 </AuthorizeView>
+
 
 @code {
     private string username = "Loading...";

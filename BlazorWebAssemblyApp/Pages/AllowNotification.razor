@@ -1,0 +1,36 @@
+﻿@inject HttpClient Http
+@inject IJSRuntime JsRuntime
+
+
+<Card Style="width:18rem;">
+    <CardHeader>
+        System Permission
+    </CardHeader>
+    <CardBody>
+        <CardTitle>Do you wanna allow to server to send a notifications</CardTitle>
+        <CardText></CardText>
+        <Button Color="ButtonColor.Success" To="#" @onclick="Subscribe" Type="ButtonType.Link">Okay</Button>
+    </CardBody>
+</Card>
+
+
+@code {
+    private NotificationSubscription Subscription { get; set; } = new NotificationSubscription();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+    }
+
+    private async Task Subscribe()
+    {
+        Subscription = await JsRuntime.InvokeAsync<NotificationSubscription>("BlazorWebPush.requestSubscription");
+        SendToServer();
+    }
+
+    private async Task SendToServer()
+    {
+        await Http.PostAsJsonAsync<NotificationSubscription>("WebPush", Subscription);
+    }
+
+}
