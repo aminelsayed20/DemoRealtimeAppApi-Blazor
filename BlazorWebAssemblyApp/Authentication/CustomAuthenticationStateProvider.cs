@@ -21,6 +21,37 @@ namespace BlazorWebAssemblyApp.Authentication
             catch { return await Task.FromResult(new AuthenticationState(anonymous)); }
         }
 
+        public async Task<AuthenticationModel> GetAuthenticationModelAsync()
+        {
+            try
+            {
+                // Retrieve the authentication data from local storage
+                var authenticationData = await localStorageService.GetItemAsStringAsync("Authentication");
+
+                // If data is null, return a new default AuthenticationModel
+                if (authenticationData == null)
+                {
+                    return new AuthenticationModel();
+                }
+
+                // Deserialize the data into an AuthenticationModel object
+                var authenticationModel = SerializerOrDeserialize.Deserialize(authenticationData);
+
+                // If deserialization results in null, return a new default AuthenticationModel
+                if (authenticationModel == null)
+                {
+                    return new AuthenticationModel();
+                }
+
+                return authenticationModel;
+            }
+            catch
+            {
+                // In case of any error, return a new default AuthenticationModel
+                return new AuthenticationModel();
+            }
+        }
+
 
         public async Task UpdateAuthenticationState(AuthenticationModel authenticationModel)
         {
